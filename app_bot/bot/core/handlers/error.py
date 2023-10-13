@@ -35,6 +35,8 @@ class ErrorDownloadHandler(AbstractDownloadHandler):
 
     def _send_error_text(self) -> None:
         for user in self._get_receiving_users():
+            if user.upload.silent:
+                continue
             kwargs = {
                 'chat_id': user.id,
                 'text': self._format_error_message(),

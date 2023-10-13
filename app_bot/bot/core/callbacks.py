@@ -39,9 +39,13 @@ class TelegramCallback:
                 self._log.debug('No urls to download, skipping message')
                 return
 
-        ack_message = await self._send_acknowledge_message(
-            message=message, url_count=len(urls)
-        )
+        if not user.upload.silent:
+            ack_message = await self._send_acknowledge_message(
+                message=message, url_count=len(urls)
+            )
+        else:
+            ack_message = None
+
         context = {
             'message': message,
             'user': user,
