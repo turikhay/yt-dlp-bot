@@ -127,12 +127,12 @@ class AbstractUploadTask(AbstractTask, metaclass=abc.ABCMeta):
         return forward_chat_ids
 
     @retry(wait=wait_fixed(3), stop=stop_after_attempt(3), reraise=True)
-    async def __upload(self, chat_id: int) -> Message | None:
+    async def __upload(self, chat_id: int, reply_to_message_id: int) -> Message | None:
         self._log.debug('Uploading to "%d" with context: %s', chat_id, self._media_ctx)
-        return await self._generate_send_media_coroutine(chat_id)
+        return await self._generate_send_media_coroutine(chat_id, reply_to_message_id)
 
     @abc.abstractmethod
-    def _generate_send_media_coroutine(self, chat_id: int) -> Coroutine:
+    def _generate_send_media_coroutine(self, chat_id: int, reply_to_message_id: int) -> Coroutine:
         pass
 
     @abc.abstractmethod
@@ -150,7 +150,7 @@ class AbstractUploadTask(AbstractTask, metaclass=abc.ABCMeta):
             )
             await self._bot.send_chat_action(chat_id, action=self._UPLOAD_ACTION)
             try:
-                message = await self.__upload(chat_id=chat_id)
+                message = await self.__upload(chat_id=chat_id, reply_to_message_id=self._ctx.message_id)
             except Exception:
                 self._log.error(
                     'Failed to upload "%s" to "%d"',
@@ -198,7 +198,7 @@ class AudioUploadTask(AbstractUploadTask):
     _UPLOAD_ACTION = ChatAction.UPLOAD_AUDIO
     _media_ctx: AudioUploadContext
 
-    def _generate_send_media_coroutine(self, chat_id: int) -> Coroutine:
+    def _generate_send_media_coroutine(self, chat_id: int, reply_to_message_id: int) -> Coroutine:
         kwargs = {
             'chat_id': chat_id,
             'audio': self._media_ctx.filepath,
@@ -206,6 +206,8 @@ class AudioUploadTask(AbstractUploadTask):
             'file_name': self._media_ctx.filename,
             'duration': int(self._media_ctx.duration),
         }
+        if reply_to_message_id:
+            kwargs['reply_to_message_id'] = reply_to_message_id
         return self._bot.send_audio(**kwargs)
 
     def _create_media_context(self) -> AudioUploadContext:
@@ -278,7 +280,7 @@ class VideoUploadTask(AbstractUploadTask):
             caption_items.append(self._media_object.file_size_human())
         return caption_items
 
-    def _generate_send_media_coroutine(self, chat_id: int) -> Coroutine:
+    def _generate_send_media_coroutine(self, chat_id: int, reply_to_message_id: int) -> Coroutine:
         kwargs = {
             'chat_id': chat_id,
             'caption': self._media_ctx.caption,
@@ -287,7 +289,8 @@ class VideoUploadTask(AbstractUploadTask):
             'height': int(self._media_ctx.height),
             'width': int(self._media_ctx.width),
         }
-
+        if reply_to_message_id:
+            kwargs['reply_to_message_id'] = reply_to_message_id
         if self._media_ctx.thumb:
             kwargs['thumb'] = self._media_ctx.thumb
         if self._media_ctx.type is MessageMediaType.ANIMATION:
