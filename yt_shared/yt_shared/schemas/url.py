@@ -11,6 +11,6 @@ class URL(RealBaseModel):
     from_chat_type: TelegramChatType
     from_user_id: StrictInt | None
     message_id: StrictInt
-    ack_message_id: StrictInt
+    ack_message_id: StrictInt | None
     save_to_storage: StrictBool
     download_media_type: DownMediaType

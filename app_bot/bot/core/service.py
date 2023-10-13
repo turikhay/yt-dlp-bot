@@ -61,7 +61,7 @@ class UrlParser:
     ) -> list[URL]:
         message: Message = context['message']
         user: UserSchema = context['user']
-        ack_message: Message = context['ack_message']
+        ack_message: Message | None = context['ack_message']
         from_user_id = message.from_user.id if message.from_user else None
         return [
             URL(
@@ -71,7 +71,7 @@ class UrlParser:
                 from_chat_type=TelegramChatType(message.chat.type.value),
                 from_user_id=from_user_id,
                 message_id=message.id,
-                ack_message_id=ack_message.id,
+                ack_message_id=(ack_message.id if ack_message else None),
                 save_to_storage=user.save_to_storage,
                 download_media_type=user.download_media_type,
             )
